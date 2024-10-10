@@ -12,6 +12,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgresql://postgres.ynlxzfisnebukjaeykvk:vERYdCzjcXKvmd9f@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 });
 
+
+
 // Verify connection to the database on server start
 pool.connect((err, client, release) => {
   if (err) {
