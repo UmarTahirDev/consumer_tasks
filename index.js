@@ -63,8 +63,7 @@ app.post('/api/consumers', async (req, res) => {
 // Get all consumers (GET)
 app.get('/api/consumers', async (req, res) => {
   const query = `
-    SELECT relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email
-    FROM consumers
+    SELECT * FROM consumers
   `;
 
   try {
