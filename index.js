@@ -1,14 +1,11 @@
 import express from 'express';
 import cors from 'cors';
-import multer from 'multer'; // For parsing FormData (multipart)
 import dotenv from 'dotenv';
-import axios from 'axios'; // Import axios
 import pkg from 'pg'; // Import pg as a package
 const { Pool } = pkg; // Destructure Pool from the imported package
 
 dotenv.config(); // Load environment variables from .env file
 
-const upload = multer();
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -34,57 +31,75 @@ app.get('/', (req, res) => {
   res.send('Hello World');
 });
 
-// Initialize multer middleware
-app.post('/api/tasks', upload.single('image'), async (req, res) => {
-  const { task_title, task_description, status, task_maintopic, task_reminder } = req.body;
+app.post('/api/consumers', async (req, res) => {
+  const {
+    relationship_to_user,
+    consumers_age,
+    consumers_password,
+    consumers_name,
+    consumers_email
+  } = req.body;
 
-  let imageUrl;
-
-  // Check if an image is included and upload it to Cloudinary
-  if (req.file) {
-    const formData = new FormData();
-    formData.append('file', req.file.buffer); // Use the file buffer from multer
-    formData.append('upload_preset', 'ecommerce-test-app'); // Your Cloudinary preset
-
-    try {
-      const response = await axios.post(`https://api.cloudinary.com/v1_1/firstcloudimage/image/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      imageUrl = response.data.secure_url; // Extract image URL from Cloudinary
-      console.log('Image uploaded to Cloudinary:', imageUrl); // Console the URL
-
-    } catch (err) {
-      console.error('Image upload error:', err.message);
-    }
-  } else {
-    return res.status(400).json({ error: 'Image file is required' });
-  }
-
-  // Ensure all other required fields are provided
-  if (!task_title || !task_description || !status || !task_maintopic || !task_reminder) {
+  // Ensure all fields are provided
+  if (!relationship_to_user || !consumers_age || !consumers_password || !consumers_name || !consumers_email) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
-  // SQL query to insert the task into the database
   const query = `
-    INSERT INTO consumertasks (task_title, task_description, image, status, main_topic, reminder)
-    VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+    INSERT INTO consumers (relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email)
+    VALUES ($1, $2, $3, $4, $5) RETURNING *
   `;
-  const values = [task_title, task_description, imageUrl, status, task_maintopic, task_reminder];
+  const values = [relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email];
 
   try {
     const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]); // Respond with the inserted task
+    res.status(201).json(result.rows[0]); // Return the newly added consumer
   } catch (err) {
     console.error('Database insert error:', err.stack);
     res.status(500).json({ error: 'Database insert error', details: err.message });
   }
 });
 
+// Get all consumers (GET)
+app.get('/api/consumers', async (req, res) => {
+  const query = `
+    SELECT * FROM consumers
+  `;
 
+  try {
+    const result = await pool.query(query);
+    res.status(200).json(result.rows); // Return all consumers
+  } catch (err) {
+    console.error('Database fetch error:', err.stack);
+    res.status(500).json({ error: 'Database fetch error', details: err.message });
+  }
+});
+
+
+app.post('/api/tasks', async (req, res) => {
+  const { task_title, task_description, main_topic, reminder } = req.body;
+  const image = "https://picsum.photos/200/300";
+  const status = "pending";
+
+  const query = `
+    INSERT INTO consumertasks (task_title, task_description, main_topic, image, status, reminder)
+    VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+  `;
+  const values = [task_title, task_description, main_topic, image, status, reminder];
+
+  try {
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Database insert error:', err.stack);
+    res.status(500).json({ error: 'Database insert error', details: err.message });
+  }
+});
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> b892f13d0f0aecf2a735d72eae8446b96bedf289
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {
   const query = 'SELECT * FROM consumertasks';
