@@ -96,10 +96,7 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 
-=======
->>>>>>> b892f13d0f0aecf2a735d72eae8446b96bedf289
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {
   const query = 'SELECT * FROM consumertasks';
@@ -275,6 +272,54 @@ app.get('/api/packages', async (req, res) => {
   }
 });
 //end for packages api
+
+
+//api for userd in superadmin
+
+app.post('/api/users', async (req, res) => {
+  const {
+    relationship_to_user,
+    consumers_age,
+    consumers_password,
+    consumers_name,
+    consumers_email
+  } = req.body;
+
+  // Ensure all fields are provided
+  if (!relationship_to_user || !consumers_age || !consumers_password || !consumers_name || !consumers_email) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  const query = `
+    INSERT INTO users (relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email)
+    VALUES ($1, $2, $3, $4, $5) RETURNING *
+  `;
+  const values = [relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email];
+
+  try {
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]); // Return the newly added consumer
+  } catch (err) {
+    console.error('Database insert error:', err.stack);
+    res.status(500).json({ error: 'Database insert error', details: err.message });
+  }
+});
+
+// Get all consumers (GET)
+app.get('/api/users', async (req, res) => {
+  const query = `
+    SELECT * FROM users
+  `;
+
+  try {
+    const result = await pool.query(query);
+    res.status(200).json(result.rows); // Return all consumers
+  } catch (err) {
+    console.error('Database fetch error:', err.stack);
+    res.status(500).json({ error: 'Database fetch error', details: err.message });
+  }
+});
+
 
 // Start the server
 const PORT = process.env.PORT || 8000;
