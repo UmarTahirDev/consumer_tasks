@@ -84,8 +84,7 @@ app.post('/api/tasks', upload.single('image'), async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
+
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {
   const query = 'SELECT * FROM consumertasks';
@@ -98,7 +97,7 @@ app.get('/api/tasks', async (req, res) => {
     res.status(500).json({ error: 'Database query error', details: err.message });
   }
 });
->>>>>>> 0e63851968dee33ed3cfc373da6180858431c122
+
 
 // Get task details by ID
 app.get('/api/tasks/:id', async (req, res) => {
@@ -221,6 +220,46 @@ app.get('/api/assign-task', async (req, res) => {
 
 
 
+//packages api code for post 
+app.post('/api/packages', async (req, res) => {
+  const { title, description, amount, tasks_allowed, yearly_amount, yearly_tasks_allowed } = req.body;
+
+  // Ensure required fields are provided
+  if (!title || !description || !amount || !tasks_allowed || !yearly_amount || !yearly_tasks_allowed) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // SQL query to insert a new package
+  const query = `
+    INSERT INTO packages (title, description, amount, tasks_allowed, yearly_amount, yearly_tasks_allowed)
+    VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+  `;
+  const values = [title, description, amount, tasks_allowed, yearly_amount, yearly_tasks_allowed];
+
+  try {
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]); // Return the newly added package
+  } catch (err) {
+    console.error('Database insert error:', err.stack);
+    res.status(500).json({ error: 'Database insert error', details: err.message });
+  }
+});
+
+
+//packages api for get
+
+
+app.get('/api/packages', async (req, res) => {
+  const query = 'SELECT * FROM packages';
+  try {
+    const result = await pool.query(query);
+    res.status(200).json(result.rows); // Return all packages
+  } catch (err) {
+    console.error('Database fetch error:', err.stack);
+    res.status(500).json({ error: 'Database fetch error', details: err.message });
+  }
+});
+//end for packages api
 
 // Start the server
 const PORT = process.env.PORT || 8000;
