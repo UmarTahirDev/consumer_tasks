@@ -125,6 +125,108 @@ app.put('/api/users/:id', async (req, res) => {
 //user api for update end
 
 
+// POST API to create a new package
+app.post('/api/packages', async (req, res) => {
+  const { package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features } = req.body;
+
+  // Validate all required fields
+  if (!package_name || !short_desc || !amount_monthly || !users_allowed || !features) {
+    return res.status(400).json({ error: 'All required fields must be provided.' });
+  }
+
+  const query = `
+    INSERT INTO packages (package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features)
+    VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
+  `;
+  const values = [package_name, short_desc, amount_monthly, yearly_discount, users_allowed, JSON.stringify(features)];
+
+  try {
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]); // Return the newly created package
+  } catch (err) {
+    console.error('Error inserting data:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+
+
+// GET API to fetch all packages
+app.get('/api/packages', async (req, res) => {
+  const query = `SELECT * FROM packages`;
+
+  try {
+    const result = await pool.query(query);
+    res.status(200).json(result.rows); // Return all packages
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Delete package
+app.delete('/api/packages/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM packages WHERE id = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+    res.status(200).json({ message: 'Package deleted successfully', package: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting package:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Update package
+app.put('/api/packages/:id', async (req, res) => {
+  const { id } = req.params;
+  const { package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features } = req.body;
+
+  // Validate the input
+  if (!package_name || amount_monthly == null || users_allowed == null) {
+    return res.status(400).json({ error: 'Package name, amount monthly, and users allowed are required' });
+  }
+
+  try {
+    // Convert features array of objects to a string format
+    const featuresList = JSON.stringify(features); // Convert features to a JSON string
+
+    console.log('Updating package with ID:', id, 'with values:', [
+      package_name,
+      short_desc,
+      amount_monthly,
+      yearly_discount,
+      users_allowed,
+      featuresList // Use the stringified features
+    ]);
+    
+    // Update the package in the database
+    const result = await pool.query(
+      `UPDATE packages
+       SET package_name = $1,
+           short_desc = $2,
+           amount_monthly = $3,
+           yearly_discount = $4,
+           users_allowed = $5,
+           features = $6
+       WHERE id = $7 RETURNING *`,
+      [package_name, short_desc, amount_monthly, yearly_discount, users_allowed, featuresList, id] // Pass the JSON stringified features
+    );
+
+    // Check if the package was found and updated
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Package not found' });
+    }
+
+    // Return the updated package
+    res.status(200).json({ message: 'Package updated successfully', package: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating package:', err.message);
+    res.status(500).json({ error: 'Database error', details: err.message });
+  }
+});
 
 // end of api
 
