@@ -31,298 +31,110 @@ app.get('/', (req, res) => {
   res.send('Hello World');
 });
 
-app.post('/api/consumers', async (req, res) => {
-  const {
-    relationship_to_user,
-    consumers_age,
-    consumers_password,
-    consumers_name,
-    consumers_email
-  } = req.body;
-
-  // Ensure all fields are provided
-  if (!relationship_to_user || !consumers_age || !consumers_password || !consumers_name || !consumers_email) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
-  const query = `
-    INSERT INTO consumers (relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email)
-    VALUES ($1, $2, $3, $4, $5) RETURNING *
-  `;
-  const values = [relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email];
-
-  try {
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]); // Return the newly added consumer
-  } catch (err) {
-    console.error('Database insert error:', err.stack);
-    res.status(500).json({ error: 'Database insert error', details: err.message });
-  }
-});
-
-// Get all consumers (GET)
-app.get('/api/consumers', async (req, res) => {
-  const query = `
-    SELECT * FROM consumers
-  `;
-
-  try {
-    const result = await pool.query(query);
-    res.status(200).json(result.rows); // Return all consumers
-  } catch (err) {
-    console.error('Database fetch error:', err.stack);
-    res.status(500).json({ error: 'Database fetch error', details: err.message });
-  }
-});
-
-
-app.post('/api/tasks', async (req, res) => {
-  const { task_title, task_description, main_topic, reminder } = req.body;
-  const image = "https://picsum.photos/200/300";
-  const status = "pending";
-
-  const query = `
-    INSERT INTO consumertasks (task_title, task_description, main_topic, image, status, reminder)
-    VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
-  `;
-  const values = [task_title, task_description, main_topic, image, status, reminder];
-
-  try {
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Database insert error:', err.stack);
-    res.status(500).json({ error: 'Database insert error', details: err.message });
-  }
-});
-
-
-// Get all tasks
-app.get('/api/tasks', async (req, res) => {
-  const query = 'SELECT * FROM consumertasks';
-
-  try {
-    const result = await pool.query(query);
-    res.json(result.rows); // Return all tasks
-  } catch (err) {
-    console.error('Database query error:', err.stack);
-    res.status(500).json({ error: 'Database query error', details: err.message });
-  }
-});
-
-
-// Get task details by ID
-app.get('/api/tasks/:id', async (req, res) => {
-  const { id } = req.params;
-
-  const query = 'SELECT * FROM consumertasks WHERE id = $1';
-  const values = [id];
-
-  try {
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-    res.json(result.rows[0]); // Return the task details
-  } catch (err) {
-    console.error('Database query error:', err.stack);
-    res.status(500).json({ error: 'Database query error', details: err.message });
-  }
-});
-
-
-// add topic post code
-app.post('/api/topics', async (req, res) => {
-  const { topic_name, topic_image } = req.body;
-
-  // Ensure the topic_name is provided
-  if (!topic_name) {
-    return res.status(400).json({ error: 'topic_name is required' });
-  }
-
-  // img_name is based on topic_name
- 
-
-  // SQL query to insert into topics table
-  const query = `
-    INSERT INTO topics (topic_name, topic_image)
-    VALUES ($1, $2) RETURNING *
-  `;
-  const values = [topic_name, topic_image];
-
-  try {
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]); // Return the newly added topic
-  } catch (err) {
-    console.error('Database insert error:', err.stack);
-    res.status(500).json({ error: 'Database insert error', details: err.message });
-  }
-});
-
-
-// Get all topics
-app.get('/api/topics', async (req, res) => {
-  const query = 'SELECT * FROM topics';
-  try {
-    const result = await pool.query(query);
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Database fetch error:', err.stack);
-    res.status(500).json({ error: 'Database fetch error', details: err.message });
-  }
-});
-
-// 
-// Get all tasks
-app.get('/api/tasks', async (req, res) => {
-  const query = 'SELECT * FROM consumertasks';
-  
-  try {
-    const result = await pool.query(query);
-    res.json(result.rows); // Return all tasks
-  } catch (err) {
-    console.error('Database query error:', err.stack);
-    res.status(500).json({ error: 'Database query error', details: err.message });
-  }
-});
-
-
-
-
-
-
-//assign task topic
-app.post('/api/assign-task', async (req, res) => {
-  const { consumer, task } = req.body;
-
-  // Ensure both consumer and task are provided
-  if (!consumer || !task) {
-      return res.status(400).json({ error: 'Consumer and task are required' });
-  }
-
-  // SQL query to insert into the assigntask table
-  const query = `
-      INSERT INTO assigntask (consumer, task)
-      VALUES ($1, $2) RETURNING *
-  `;
-  const values = [consumer, task];
-
-  try {
-      const result = await pool.query(query, values);
-      res.status(201).json(result.rows[0]); // Return the newly assigned task
-  } catch (err) {
-      console.error('Database insert error:', err.stack);
-      res.status(500).json({ error: 'Database insert error', details: err.message });
-  }
-});
-
-
-// Get all assigned tasks
-app.get('/api/assign-task', async (req, res) => {
-  const query = 'SELECT * FROM assigntask';
-  try {
-    const result = await pool.query(query);
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Database fetch error:', err.stack);
-    res.status(500).json({ error: 'Database fetch error', details: err.message });
-  }
-});
-
-
-
-
-//packages api code for post 
-app.post('/api/packages', async (req, res) => {
-  const { title, description, amount, tasks_allowed, yearly_amount, yearly_tasks_allowed } = req.body;
-
-  // Ensure required fields are provided
-  if (!title || !description || !amount || !tasks_allowed || !yearly_amount || !yearly_tasks_allowed) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
-  // SQL query to insert a new package
-  const query = `
-    INSERT INTO packages (title, description, amount, tasks_allowed, yearly_amount, yearly_tasks_allowed)
-    VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
-  `;
-  const values = [title, description, amount, tasks_allowed, yearly_amount, yearly_tasks_allowed];
-
-  try {
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]); // Return the newly added package
-  } catch (err) {
-    console.error('Database insert error:', err.stack);
-    res.status(500).json({ error: 'Database insert error', details: err.message });
-  }
-});
-
-
-//packages api for get
-
-
-app.get('/api/packages', async (req, res) => {
-  const query = 'SELECT * FROM packages';
-  try {
-    const result = await pool.query(query);
-    res.status(200).json(result.rows); // Return all packages
-  } catch (err) {
-    console.error('Database fetch error:', err.stack);
-    res.status(500).json({ error: 'Database fetch error', details: err.message });
-  }
-});
-//end for packages api
-
-
-//api for userd in superadmin
-
+// start of api
+//user api for post
 app.post('/api/users', async (req, res) => {
   const {
-    relationship_to_user,
-    consumers_age,
-    consumers_password,
-    consumers_name,
-    consumers_email
+    user_name,
+    user_email,
+    user_password,
+    user_emergency_contact_information,
+    user_role
   } = req.body;
 
   // Ensure all fields are provided
-  if (!relationship_to_user || !consumers_age || !consumers_password || !consumers_name || !consumers_email) {
+  if (!user_name || !user_email || !user_password || !user_emergency_contact_information || !user_role) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
   const query = `
-    INSERT INTO users (relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email)
+    INSERT INTO users (user_name,
+    user_email,
+    user_password,
+    user_emergency_contact_information,
+    user_role)
     VALUES ($1, $2, $3, $4, $5) RETURNING *
   `;
-  const values = [relationship_to_user, consumers_age, consumers_password, consumers_name, consumers_email];
+  const values = [user_name,
+    user_email,
+    user_password,
+    user_emergency_contact_information,
+    user_role];
 
   try {
     const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]); // Return the newly added consumer
+    res.status(201).json(result.rows[0]); // Return the newly added user
   } catch (err) {
     console.error('Database insert error:', err.stack);
     res.status(500).json({ error: 'Database insert error', details: err.message });
   }
 });
+//end user post api
 
-// Get all consumers (GET)
+
+// user api for fetch
 app.get('/api/users', async (req, res) => {
-  const query = `
-    SELECT * FROM users
-  `;
+  const query = `SELECT * FROM users`;
 
   try {
     const result = await pool.query(query);
-    res.status(200).json(result.rows); // Return all consumers
+    res.status(200).json(result.rows); // Return all users
   } catch (err) {
     console.error('Database fetch error:', err.stack);
     res.status(500).json({ error: 'Database fetch error', details: err.message });
   }
 });
+// get api end
+
+//user api for update
+app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    user_name,
+    user_email,
+    user_password,
+    user_emergency_contact_information,
+    user_role
+  } = req.body;
+
+  const query = `
+    UPDATE users
+    SET user_name = $1, user_email = $2, user_password = $3, user_emergency_contact_information = $4, user_role = $5
+    WHERE id = $6 RETURNING *
+  `;
+  const values = [ user_name,
+    user_email,
+    user_password,
+    user_emergency_contact_information,
+    user_role,
+     id];
+
+  try {
+    const result = await pool.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json(result.rows[0]); // Return the updated user
+  } catch (err) {
+    console.error('Database update error:', err.stack);
+    res.status(500).json({ error: 'Database update error', details: err.message });
+  }
+});
+//user api for update end
+
+
+
+// end of api
+
+
+
+
 
 
 // Start the server
-const PORT = process.env.PORT || 8000;
+const PORT =  8000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
