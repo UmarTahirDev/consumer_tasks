@@ -182,6 +182,8 @@ app.post("/api/community", async (req, res) => {
 //user api for update end
 
 
+
+
 // POST API to create a new package
 app.post('/api/packages', async (req, res) => {
   const { package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features } = req.body;
@@ -236,6 +238,26 @@ app.delete('/api/packages/:id', async (req, res) => {
   }
 });
 
+
+app.get('/api/packages/:id', async (req, res) => {
+  const { id } = req.params; // Get the package ID from the request parameters
+  const query = `SELECT * FROM packages WHERE id = $1`;
+
+  try {
+    const result = await pool.query(query, [id]); // Pass the ID as a parameter to the query
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Package not found' }); // Handle case where no package is found
+    }
+
+    res.status(200).json(result.rows[0]); // Return the first row (single package)
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+
 // Update package
 app.put('/api/packages/:id', async (req, res) => {
   const { id } = req.params;
@@ -285,8 +307,117 @@ app.put('/api/packages/:id', async (req, res) => {
   }
 });
 
-// end of api
+// POST endpoint to create a new consumer
+// app.post('/api/consumers', async (req, res) => {
+//   const { name, email, relationship, emergency_contact, password, preferences } = req.body;
 
+//   try {
+//       const result = await pool.query(
+//           'INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+//           [name, email, relationship, emergency_contact, password, preferences]
+//       );
+
+//       const newConsumer = result.rows[0];
+//       res.status(201).json({
+//           message: 'Consumer data saved successfully!',
+//           consumer: newConsumer,
+//       });
+//   } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: 'Error saving consumer data.', error });
+//   }
+// });
+
+app.post('/api/consumers', async (req, res) => {
+  const { name, email, relationship, emergency_contact, password, preferenceForms } = req.body;
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [name, email, relationship, emergency_contact, password, JSON.stringify(preferenceForms)]
+    );
+
+    const newConsumer = result.rows[0];
+    res.status(201).json({
+      message: 'Consumer data saved successfully!',
+      consumer: newConsumer,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error saving consumer data.', error: error.message });
+  }
+});
+
+
+
+
+
+app.get('/api/consumers', async (req, res) => {
+  try {
+      const result = await pool.query('SELECT * FROM consumers');
+      res.status(200).json(result.rows);
+  } catch (error) {
+      console.error('Error retrieving consumer data:', error);
+      res.status(500).json({ message: 'Error retrieving consumer data.', error });
+  }
+});
+
+
+//delete api for get consumer
+app.delete('/api/consumers/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query('DELETE FROM consumers WHERE id = $1 RETURNING *', [id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Consumer not found.' });
+    }
+
+    res.status(200).json({
+      message: 'Consumer deleted successfully!',
+      deletedConsumer: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error deleting consumer:', error);
+    res.status(500).json({ message: 'Error deleting consumer.', error: error.message });
+  }
+}); 
+
+    //end api for get consumer
+
+//update api for get consumer
+app.put('/api/consumers/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, email, relationship, emergency_contact, password, preferenceForms } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE consumers 
+       SET name = $1, email = $2, relationship = $3, emergency_contact = $4, password = $5, preferences = $6 
+       WHERE id = $7 RETURNING *`,
+      [name, email, relationship, emergency_contact, password, JSON.stringify(preferenceForms), id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Consumer not found.' });
+    }
+
+    const updatedConsumer = result.rows[0];
+    res.status(200).json({
+      message: 'Consumer updated successfully!',
+      consumer: updatedConsumer,
+    });
+  } catch (error) {
+    console.error('Error updating consumer:', error);
+    res.status(500).json({ message: 'Error updating consumer.', error: error.message });
+  }
+});
+
+
+
+// end of api
+  
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
