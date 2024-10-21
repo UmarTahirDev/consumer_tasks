@@ -369,27 +369,13 @@ app.put("/api/packages/:id", async (req, res) => {
 //   }
 // });
 
-app.post("/api/consumers", async (req, res) => {
-  const {
-    name,
-    email,
-    relationship,
-    emergency_contact,
-    password,
-    preferenceForms,
-  } = req.body;
+app.post('/api/consumers', async (req, res) => {
+  const { name, email, relationship, emergency_contact, password, preferenceForms } = req.body;
 
   try {
     const result = await pool.query(
-      "INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-      [
-        name,
-        email,
-        relationship,
-        emergency_contact,
-        password,
-        JSON.stringify(preferenceForms),
-      ]
+      'INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [name, email, relationship, emergency_contact, password, JSON.stringify(preferenceForms)]
     );
 
     const newConsumer = result.rows[0];
@@ -405,13 +391,13 @@ app.post("/api/consumers", async (req, res) => {
   }
 });
 
-app.get("/api/consumers", async (req, res) => {
+app.get('/api/consumers', async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM consumers");
-    res.status(200).json(result.rows);
+      const result = await pool.query('SELECT * FROM consumers');
+      res.status(200).json(result.rows);
   } catch (error) {
-    console.error("Error retrieving consumer data:", error);
-    res.status(500).json({ message: "Error retrieving consumer data.", error });
+      console.error('Error retrieving consumer data:', error);
+      res.status(500).json({ message: 'Error retrieving consumer data.', error });
   }
 });
 
@@ -481,73 +467,8 @@ app.put("/api/consumers/:id", async (req, res) => {
       consumer: updatedConsumer,
     });
   } catch (error) {
-    console.error("Error updating consumer:", error);
-    res
-      .status(500)
-      .json({ message: "Error updating consumer.", error: error.message });
-  }
-});
-
-// add api for tasks
-app.post("/api/tasks", async (req, res) => {
-  const {
-    task_name,
-    consumerId,
-    reminderType,
-    reminderTime,
-    reminderDays,
-    admin_id,
-  } = req.body;
-
-  try {
-    const reminderDetails = {
-      reminderType,
-      reminderTime,
-      reminderDays: reminderType === "weekly" ? reminderDays : null, // Only set reminderDays if weekly
-    };
-
-    const query = `
-      INSERT INTO tasks (task_name, consumer_id, reminder_details, admin_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `;
-    const values = [task_name, consumerId, reminderDetails, admin_id];
-
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error creating task:", error);
-    res
-      .status(500)
-      .json({ message: "Error creating task.", error: error.message });
-  }
-});
-
-app.get("/api/tasks", async (req, res) => {
-  try {
-    // Assuming you're getting the admin_id from the session or request
-    const admin_id = req.headers.authorization?.split(" ")[1];
-
-    if (!admin_id) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized: Admin ID not found" });
-    }
-
-    // Query to fetch tasks only for the logged-in admin
-    const query = `
-    SELECT tasks.*, consumers.name AS consumer_name 
-    FROM tasks 
-    JOIN consumers ON tasks.consumer_id = consumers.id 
-    WHERE tasks.admin_id = $1`;
-    const result = await pool.query(query, [admin_id]);
-
-    res.status(200).json(result.rows);
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res
-      .status(500)
-      .json({ message: "Error fetching tasks", error: error.message });
+    console.error('Error updating consumer:', error);
+    res.status(500).json({ message: 'Error updating consumer.', error: error.message });
   }
 });
 app.delete("/api/tasks/:id", async (req, res) => {
