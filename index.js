@@ -361,12 +361,19 @@ app.post('/api/consumers', async (req, res) => {
 
 
 app.get('/api/consumers', async (req, res) => {
+  // Get admin_id from the Authorization header
+  const admin_id = req.headers.authorization?.split(' ')[1]; // assuming "Bearer {admin_id}"
+
+  if (!admin_id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
   try {
-      const result = await pool.query('SELECT * FROM consumers');
-      res.status(200).json(result.rows);
+    const result = await pool.query('SELECT * FROM consumers WHERE admin_id = $1', [admin_id]);
+    res.status(200).json(result.rows);
   } catch (error) {
-      console.error('Error retrieving consumer data:', error);
-      res.status(500).json({ message: 'Error retrieving consumer data.', error });
+    console.error('Error retrieving consumer data:', error);
+    res.status(500).json({ message: 'Error retrieving consumer data.', error });
   }
 });
 
