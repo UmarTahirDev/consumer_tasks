@@ -345,8 +345,8 @@ app.post('/api/consumers', async (req, res) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *
       )
-      INSERT INTO users (user_name, user_email, user_password, user_role)
-      SELECT name, email, password, 'consumer' FROM inserted_consumer
+      INSERT INTO users (user_name, user_email, user_password,user_emergency_contact_information, user_role)
+      SELECT name, email, password, emergency_contact, 'consumer' FROM inserted_consumer
       RETURNING *;
     `;
 
