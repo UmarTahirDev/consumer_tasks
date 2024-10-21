@@ -329,12 +329,20 @@ app.put('/api/packages/:id', async (req, res) => {
 // });
 
 app.post('/api/consumers', async (req, res) => {
-  const { name, email, relationship, emergency_contact, password, preferenceForms } = req.body;
+  const { name, email, relationship, emergency_contact, password, preferenceForms, admin_id } = req.body;
 
   try {
     const result = await pool.query(
-      'INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, email, relationship, emergency_contact, password, JSON.stringify(preferenceForms)]
+      'INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences, admin_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [
+        name,
+        email,
+        relationship,
+        emergency_contact,
+        password,
+        JSON.stringify(preferenceForms), // preferences field
+        admin_id // admin_id field
+      ]
     );
 
     const newConsumer = result.rows[0];
@@ -411,7 +419,7 @@ app.put('/api/consumers/:id', async (req, res) => {
   } catch (error) {
     console.error('Error updating consumer:', error);
     res.status(500).json({ message: 'Error updating consumer.', error: error.message });
-  }
+  } 
 });
 
 
