@@ -181,65 +181,87 @@ app.post("/api/community", async (req, res) => {
 
 //user api for update end
 
-
-
-
 // POST API to create a new package
-app.post('/api/packages', async (req, res) => {
-  const { package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features } = req.body;
+app.post("/api/packages", async (req, res) => {
+  const {
+    package_name,
+    short_desc,
+    amount_monthly,
+    yearly_discount,
+    users_allowed,
+    features,
+  } = req.body;
 
   // Validate all required fields
-  if (!package_name || !short_desc || !amount_monthly || !users_allowed || !features) {
-    return res.status(400).json({ error: 'All required fields must be provided.' });
+  if (
+    !package_name ||
+    !short_desc ||
+    !amount_monthly ||
+    !users_allowed ||
+    !features
+  ) {
+    return res
+      .status(400)
+      .json({ error: "All required fields must be provided." });
   }
 
   const query = `
     INSERT INTO packages (package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features)
     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
   `;
-  const values = [package_name, short_desc, amount_monthly, yearly_discount, users_allowed, JSON.stringify(features)];
+  const values = [
+    package_name,
+    short_desc,
+    amount_monthly,
+    yearly_discount,
+    users_allowed,
+    JSON.stringify(features),
+  ];
 
   try {
     const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]); // Return the newly created package
   } catch (err) {
-    console.error('Error inserting data:', err);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Error inserting data:", err);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
-
-
 // GET API to fetch all packages
-app.get('/api/packages', async (req, res) => {
+app.get("/api/packages", async (req, res) => {
   const query = `SELECT * FROM packages`;
 
   try {
     const result = await pool.query(query);
     res.status(200).json(result.rows); // Return all packages
   } catch (err) {
-    console.error('Error fetching data:', err);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Error fetching data:", err);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
 // Delete package
-app.delete('/api/packages/:id', async (req, res) => {
+app.delete("/api/packages/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('DELETE FROM packages WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query(
+      "DELETE FROM packages WHERE id = $1 RETURNING *",
+      [id]
+    );
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Package not found' });
+      return res.status(404).json({ error: "Package not found" });
     }
-    res.status(200).json({ message: 'Package deleted successfully', package: result.rows[0] });
+    res.status(200).json({
+      message: "Package deleted successfully",
+      package: result.rows[0],
+    });
   } catch (err) {
-    console.error('Error deleting package:', err);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Error deleting package:", err);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
-
-app.get('/api/packages/:id', async (req, res) => {
+app.get("/api/packages/:id", async (req, res) => {
   const { id } = req.params; // Get the package ID from the request parameters
   const query = `SELECT * FROM packages WHERE id = $1`;
 
@@ -247,40 +269,48 @@ app.get('/api/packages/:id', async (req, res) => {
     const result = await pool.query(query, [id]); // Pass the ID as a parameter to the query
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Package not found' }); // Handle case where no package is found
+      return res.status(404).json({ error: "Package not found" }); // Handle case where no package is found
     }
 
     res.status(200).json(result.rows[0]); // Return the first row (single package)
   } catch (err) {
-    console.error('Error fetching data:', err);
-    res.status(500).json({ error: 'Database error' });
+    console.error("Error fetching data:", err);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
-
 // Update package
-app.put('/api/packages/:id', async (req, res) => {
+app.put("/api/packages/:id", async (req, res) => {
   const { id } = req.params;
-  const { package_name, short_desc, amount_monthly, yearly_discount, users_allowed, features } = req.body;
+  const {
+    package_name,
+    short_desc,
+    amount_monthly,
+    yearly_discount,
+    users_allowed,
+    features,
+  } = req.body;
 
   // Validate the input
   if (!package_name || amount_monthly == null || users_allowed == null) {
-    return res.status(400).json({ error: 'Package name, amount monthly, and users allowed are required' });
+    return res.status(400).json({
+      error: "Package name, amount monthly, and users allowed are required",
+    });
   }
 
   try {
     // Convert features array of objects to a string format
     const featuresList = JSON.stringify(features); // Convert features to a JSON string
 
-    console.log('Updating package with ID:', id, 'with values:', [
+    console.log("Updating package with ID:", id, "with values:", [
       package_name,
       short_desc,
       amount_monthly,
       yearly_discount,
       users_allowed,
-      featuresList // Use the stringified features
+      featuresList, // Use the stringified features
     ]);
-    
+
     // Update the package in the database
     const result = await pool.query(
       `UPDATE packages
@@ -291,19 +321,30 @@ app.put('/api/packages/:id', async (req, res) => {
            users_allowed = $5,
            features = $6
        WHERE id = $7 RETURNING *`,
-      [package_name, short_desc, amount_monthly, yearly_discount, users_allowed, featuresList, id] // Pass the JSON stringified features
+      [
+        package_name,
+        short_desc,
+        amount_monthly,
+        yearly_discount,
+        users_allowed,
+        featuresList,
+        id,
+      ] // Pass the JSON stringified features
     );
 
     // Check if the package was found and updated
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Package not found' });
+      return res.status(404).json({ error: "Package not found" });
     }
 
     // Return the updated package
-    res.status(200).json({ message: 'Package updated successfully', package: result.rows[0] });
+    res.status(200).json({
+      message: "Package updated successfully",
+      package: result.rows[0],
+    });
   } catch (err) {
-    console.error('Error updating package:', err.message);
-    res.status(500).json({ error: 'Database error', details: err.message });
+    console.error("Error updating package:", err.message);
+    res.status(500).json({ error: "Database error", details: err.message });
   }
 });
 
@@ -328,96 +369,223 @@ app.put('/api/packages/:id', async (req, res) => {
 //   }
 // });
 
-app.post('/api/consumers', async (req, res) => {
-  const { name, email, relationship, emergency_contact, password, preferenceForms } = req.body;
+app.post("/api/consumers", async (req, res) => {
+  const {
+    name,
+    email,
+    relationship,
+    emergency_contact,
+    password,
+    preferenceForms,
+  } = req.body;
 
   try {
     const result = await pool.query(
-      'INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, email, relationship, emergency_contact, password, JSON.stringify(preferenceForms)]
+      "INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [
+        name,
+        email,
+        relationship,
+        emergency_contact,
+        password,
+        JSON.stringify(preferenceForms),
+      ]
     );
 
     const newConsumer = result.rows[0];
     res.status(201).json({
-      message: 'Consumer data saved successfully!',
+      message: "Consumer data saved successfully!",
       consumer: newConsumer,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error saving consumer data.', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error saving consumer data.", error: error.message });
   }
 });
 
-
-
-
-
-app.get('/api/consumers', async (req, res) => {
+app.get("/api/consumers", async (req, res) => {
   try {
-      const result = await pool.query('SELECT * FROM consumers');
-      res.status(200).json(result.rows);
+    const result = await pool.query("SELECT * FROM consumers");
+    res.status(200).json(result.rows);
   } catch (error) {
-      console.error('Error retrieving consumer data:', error);
-      res.status(500).json({ message: 'Error retrieving consumer data.', error });
+    console.error("Error retrieving consumer data:", error);
+    res.status(500).json({ message: "Error retrieving consumer data.", error });
   }
 });
-
 
 //delete api for get consumer
-app.delete('/api/consumers/:id', async (req, res) => {
+app.delete("/api/consumers/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query('DELETE FROM consumers WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query(
+      "DELETE FROM consumers WHERE id = $1 RETURNING *",
+      [id]
+    );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Consumer not found.' });
+      return res.status(404).json({ message: "Consumer not found." });
     }
 
     res.status(200).json({
-      message: 'Consumer deleted successfully!',
+      message: "Consumer deleted successfully!",
       deletedConsumer: result.rows[0],
     });
   } catch (error) {
-    console.error('Error deleting consumer:', error);
-    res.status(500).json({ message: 'Error deleting consumer.', error: error.message });
+    console.error("Error deleting consumer:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting consumer.", error: error.message });
   }
-}); 
+});
 
-    //end api for get consumer
+//end api for get consumer
 
 //update api for get consumer
-app.put('/api/consumers/:id', async (req, res) => {
+app.put("/api/consumers/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, email, relationship, emergency_contact, password, preferenceForms } = req.body;
+  const {
+    name,
+    email,
+    relationship,
+    emergency_contact,
+    password,
+    preferenceForms,
+  } = req.body;
 
   try {
     const result = await pool.query(
       `UPDATE consumers 
        SET name = $1, email = $2, relationship = $3, emergency_contact = $4, password = $5, preferences = $6 
        WHERE id = $7 RETURNING *`,
-      [name, email, relationship, emergency_contact, password, JSON.stringify(preferenceForms), id]
+      [
+        name,
+        email,
+        relationship,
+        emergency_contact,
+        password,
+        JSON.stringify(preferenceForms),
+        id,
+      ]
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Consumer not found.' });
+      return res.status(404).json({ message: "Consumer not found." });
     }
 
     const updatedConsumer = result.rows[0];
     res.status(200).json({
-      message: 'Consumer updated successfully!',
+      message: "Consumer updated successfully!",
       consumer: updatedConsumer,
     });
   } catch (error) {
-    console.error('Error updating consumer:', error);
-    res.status(500).json({ message: 'Error updating consumer.', error: error.message });
+    console.error("Error updating consumer:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating consumer.", error: error.message });
   }
 });
 
+// add api for tasks
+app.post("/api/tasks", async (req, res) => {
+  const {
+    task_name,
+    consumerId,
+    reminderType,
+    reminderTime,
+    reminderDays,
+    admin_id,
+  } = req.body;
 
+  try {
+    const reminderDetails = {
+      reminderType,
+      reminderTime,
+      reminderDays: reminderType === "weekly" ? reminderDays : null, // Only set reminderDays if weekly
+    };
+
+    const query = `
+      INSERT INTO tasks (task_name, consumer_id, reminder_details, admin_id)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+    const values = [task_name, consumerId, reminderDetails, admin_id];
+
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating task:", error);
+    res
+      .status(500)
+      .json({ message: "Error creating task.", error: error.message });
+  }
+});
+
+app.get("/api/tasks", async (req, res) => {
+  try {
+    // Assuming you're getting the admin_id from the session or request
+    const admin_id = req.headers.authorization?.split(" ")[1];
+
+    if (!admin_id) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Admin ID not found" });
+    }
+
+    // Query to fetch tasks only for the logged-in admin
+    const query = `
+    SELECT tasks.*, consumers.name AS consumer_name 
+    FROM tasks 
+    JOIN consumers ON tasks.consumer_id = consumers.id 
+    WHERE tasks.admin_id = $1`;
+    const result = await pool.query(query, [admin_id]);
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching tasks", error: error.message });
+  }
+});
+app.delete("/api/tasks/:id", async (req, res) => {
+  const { id } = req.params; // Get the task ID from the URL
+
+  try {
+    const admin_id = req.headers.authorization?.split(" ")[1];
+
+    if (!admin_id) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Admin ID not found" });
+    }
+
+    const query = `
+      DELETE FROM tasks
+      WHERE id = $1 AND admin_id = $2
+      RETURNING *
+    `;
+    const values = [id, admin_id];
+
+    const result = await pool.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.status(200).json({ message: "Task deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting task", error: error.message });
+  }
+});
 
 // end of api
-  
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
