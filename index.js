@@ -433,6 +433,91 @@ app.put('/api/consumers/:id', async (req, res) => {
 
 // end of api
   
+
+
+
+//umer code
+app.post("/api/tasks", async (req, res) => {
+  const {
+    task_name,
+    consumerId,
+    reminderType,
+    reminderTime,
+    reminderDays,
+    admin_id,
+  } = req.body;
+  try {
+    const reminderDetails = {
+      reminderType,
+      reminderTime,
+      reminderDays: reminderType === "weekly" ? reminderDays : null, // Only set reminderDays if weekly
+    };
+    const query = `
+      INSERT INTO tasks (task_name, consumer_id, reminder_details, admin_id)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+    const values = [task_name, consumerId, reminderDetails, admin_id];
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating task:", error);
+    res
+      .status(500)
+      .json({ message: "Error creating task.", error: error.message });
+  }
+});
+app.get("/api/tasks", async (req, res) => {
+  try {
+    // Assuming you're getting the admin_id from the session or request
+    const admin_id = req.headers.authorization?.split(" ")[1];
+    if (!admin_id) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Admin ID not found" });
+    }
+    // Query to fetch tasks only for the logged-in admin
+    const query = `
+    SELECT tasks.*, consumers.name AS consumer_name
+    FROM tasks
+    JOIN consumers ON tasks.consumer_id = consumers.id
+    WHERE tasks.admin_id = $1`;
+    const result = await pool.query(query, [admin_id]);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching tasks", error: error.message });
+  }
+});
+app.delete("/api/tasks/:id", async (req, res) => {
+  const { id } = req.params; // Get the task ID from the URL
+  try {
+    const admin_id = req.headers.authorization?.split(" ")[1];
+    if (!admin_id) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Admin ID not found" });
+    }
+    const query = `
+      DELETE FROM tasks
+      WHERE id = $1 AND admin_id = $2
+      RETURNING *
+    `;
+    const values = [id, admin_id];
+    const result = await pool.query(query, values);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    res.status(200).json({ message: "Task deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting task", error: error.message });
+  }
+});
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
