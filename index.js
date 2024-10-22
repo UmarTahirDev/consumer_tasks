@@ -394,6 +394,19 @@ app.get('/api/consumers', async (req, res) => {
 });
 
 
+app.get('/api/consumers/:id', async (req, res) => {
+  // Get admin_id from the Authorization header
+ 
+
+  try {
+    const result = await pool.query('SELECT * FROM consumers where id = $1', [req.params.id]);
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error retrieving consumer data:', error);
+    res.status(500).json({ message: 'Error retrieving consumer data.', error });
+  }
+});
+
 //delete api for get consumer
 app.delete('/api/consumers/:id', async (req, res) => {
   const { id } = req.params;
@@ -444,58 +457,13 @@ app.put('/api/consumers/:id', async (req, res) => {
     res.status(500).json({ message: 'Error updating consumer.', error: error.message });
   } 
 });
-// start of task api
-
-app.get('/api/consumers/count', async (req, res) => {
-  const { admin_id } = req.query; // Retrieve admin_id from request query or session (e.g., next-auth session)
-  
-  try {
-    // Step 1: Get the consumer count from the consumers table
-    const consumerResult = await pool.query(
-      'SELECT COUNT(*) AS consumer_count FROM consumers WHERE admin_id = $1',
-      [admin_id]
-    );
-    const consumerCount = parseInt(consumerResult.rows[0].consumer_count, 10); // Convert to integer
-
-    // Step 2: Get the users_allowed from the packages table
-    const packageResult = await pool.query(
-      'SELECT users_allowed FROM packages WHERE id = $1',
-      ['2']
-    );
-    
-    if (packageResult.rowCount === 0) {
-      return res.status(404).json({
-        message: 'No package found for the admin'
-      });
-    }
-
-    const usersAllowed = parseInt(packageResult.rows[0].users_allowed, 10); // Convert to integer
-
-    // Step 3: Compare consumer count with users_allowed
-    const exceedsLimit = consumerCount >= usersAllowed;
-
-    // Step 4: Respond with the comparison result
-    res.status(200).json({
-      message: exceedsLimit
-        ? 'Consumer count exceeds the allowed limit'
-        : 'Consumer count is within the allowed limit',
-      consumerCount,
-      usersAllowed,
-      exceedsLimit
-    });
-    
-  } catch (error) {
-    console.error('Error fetching consumer count or package:', error);
-    res.status(500).json({
-      message: 'Error retrieving data',
-      error: error.message
-    });
-  }
-});
 
 
 
 // end of api
+  
+
+
 
 //umer code
 app.post("/api/tasks", async (req, res) => {
@@ -528,6 +496,51 @@ app.post("/api/tasks", async (req, res) => {
       .json({ message: "Error creating task.", error: error.message });
   }
 });
+
+app.put("/api/tasks/:id", async (req, res) => {
+  const { id } = req.params; // Get the task ID from the URL
+  const {
+    task_name,
+    consumerId,
+    reminderType,
+    reminderTime,
+    reminderDays,
+    admin_id,
+  } = req.body;
+
+  try {
+    const reminderDetails = {
+      reminderType,
+      reminderTime,
+      reminderDays: reminderType === "weekly" ? reminderDays : null, // Only set reminderDays if weekly
+    };
+
+    const query = `
+      UPDATE tasks
+      SET task_name = $1,
+          consumer_id = $2,
+          reminder_details = $3,
+          admin_id = $4
+      WHERE id = $5
+      RETURNING *
+    `;
+    const values = [task_name, consumerId, reminderDetails, admin_id, id];
+    const result = await pool.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Task not found." });
+    }
+
+    res.status(200).json(result.rows[0]); // Return the updated task
+  } catch (error) {
+    console.error("Error updating task:", error);
+    res
+      .status(500)
+      .json({ message: "Error updating task.", error: error.message });
+  }
+});
+
+
 app.get("/api/tasks", async (req, res) => {
   try {
     // Assuming you're getting the admin_id from the session or request
@@ -552,6 +565,21 @@ app.get("/api/tasks", async (req, res) => {
       .json({ message: "Error fetching tasks", error: error.message });
   }
 });
+
+
+app.get('/api/tasks/:id', async (req, res) => {
+  // Get admin_id from the Authorization header
+ 
+
+  try {
+    const result = await pool.query('SELECT * FROM tasks where id = $1', [req.params.id]);
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error retrieving consumer data:', error);
+    res.status(500).json({ message: 'Error retrieving consumer data.', error });
+  }
+});
+
 app.delete("/api/tasks/:id", async (req, res) => {
   const { id } = req.params; // Get the task ID from the URL
   try {
@@ -577,6 +605,31 @@ app.delete("/api/tasks/:id", async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting task", error: error.message });
+  }
+});
+
+
+
+
+//packages api
+app.get('/api/consumers/count', async (req, res) => {
+  const { admin_id } = "11" // Retrieve admin_id from request query or session (e.g., next-auth session)
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*) AS consumer_count FROM consumers WHERE admin_id = $1',
+      [admin_id]
+    );
+    const consumerCount = result.rows[0].consumer_count;
+    res.status(200).json({
+      message: 'Number of consumers added by the admin retrieved successfully',
+      count: consumerCount
+    });
+  } catch (error) {
+    console.error('Error fetching consumer count:', error);
+    res.status(500).json({
+      message: 'Error retrieving consumer count',
+      error: error.message
+    });
   }
 });
 // Start the server
