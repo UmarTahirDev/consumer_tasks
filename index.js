@@ -345,7 +345,7 @@ app.put('/api/packages/:id', async (req, res) => {
 //     res.status(500).json({ message: 'Error saving consumer and user data.', error: error.message });
 //   }
 // });
-router.post('/api/consumers', async (req, res) => {
+app.post('/api/consumers', async (req, res) => {
   const { name, email, relationship, emergency_contact, password, preferenceForms, admin_id } = req.body;
 
   try {
