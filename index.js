@@ -710,6 +710,40 @@ app.get('/api/consumers/count/:admin_id', async (req, res) => {
     });
   }
 });
+
+
+
+
+
+//purchase api
+app.post('/api/purchase', async (req, res) => {
+  const { user_id, package_id, package_name, price, allowed_users } = req.body;
+
+  // Check if all required fields are provided
+  if (!user_id || !package_id || !package_name || !price) {
+      return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+      // Insert the purchase into the database
+      const query = `
+          INSERT INTO package_purchases (user_id, package_id, package_name, price, allowed_users)
+          VALUES ($1, $2, $3, $4,$5)
+          RETURNING *;
+      `;
+      const values = [user_id, package_id, package_name, price,allowed_users];
+      const result = await pool.query(query, values); // Assuming db.query connects to your database
+
+      // Return the created purchase
+      res.status(201).json({
+          success: true,
+          purchase: result.rows[0], // returning the created purchase record
+      });
+  } catch (error) {
+      console.error('Error purchasing package:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
