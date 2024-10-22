@@ -579,6 +579,51 @@ app.delete("/api/tasks/:id", async (req, res) => {
       .json({ message: "Error deleting task", error: error.message });
   }
 });
+
+// donotdisturb api
+
+app.post('/api/consumers/donotdisturb', async (req, res) => {
+  const { startTime, endTime, consumer_id, admin_id } = req.body;
+
+  // Basic validation
+  if (!startTime || !endTime || !consumer_id || !admin_id) {
+    return res.status(400).json({
+      message: 'All fields are required: startTime, endTime, user_id, and admin_id',
+    });
+  }
+
+  try {
+    // Insert or update Do Not Disturb settings for the user
+    const query = `
+      INSERT INTO donotdisturb (consumer_id, admin_id, start_time, end_time)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (consumer_id, admin_id) 
+      DO UPDATE SET start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time
+    `;
+    
+    const result = await pool.query(query, [consumer_id, admin_id, startTime, endTime]);
+
+    // Return a success message
+    res.status(200).json({
+      message: 'Do Not Disturb settings saved successfully',
+      data: {
+        consumer_id,
+        admin_id,
+        startTime,
+        endTime,
+      },
+    });
+    
+  } catch (error) {
+    console.error('Error saving Do Not Disturb settings:', error);
+    res.status(500).json({
+      message: 'Error saving Do Not Disturb settings',
+      error: error.message,
+    });
+  }
+});
+
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
