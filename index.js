@@ -670,23 +670,42 @@ app.post('/api/consumers/donotdisturb', async (req, res) => {
 
 
 
-//packages api
-app.get('/api/consumers/count', async (req, res) => {
-  const { admin_id } = "11" // Retrieve admin_id from request query or session (e.g., next-auth session)
+//consumer count
+app.get('/api/consumers/count/:admin_id', async (req, res) => {
+  const { admin_id } = req.params; // Retrieve admin_id from request query or session (e.g., next-auth session)
   try {
-    const result = await pool.query(
+    // Step 1: Get the consumer count from the consumers table
+    const consumerResult = await pool.query(
       'SELECT COUNT(*) AS consumer_count FROM consumers WHERE admin_id = $1',
       [admin_id]
     );
-    const consumerCount = result.rows[0].consumer_count;
+    const consumerCount = parseInt(consumerResult.rows[0].consumer_count, 10); // Convert to integer
+    // Step 2: Get the users_allowed from the packages table
+    const packageResult = await pool.query(
+      'SELECT users_allowed FROM packages WHERE id = $1',
+      ['2']
+    );
+    if (packageResult.rowCount === 0) {
+      return res.status(404).json({
+        message: 'No package found for the admin'
+      });
+    }
+    const usersAllowed = parseInt(packageResult.rows[0].users_allowed, 10); // Convert to integer
+    // Step 3: Compare consumer count with users_allowed
+    const exceedsLimit = consumerCount >= usersAllowed;
+    // Step 4: Respond with the comparison result
     res.status(200).json({
-      message: 'Number of consumers added by the admin retrieved successfully',
-      count: consumerCount
+      message: exceedsLimit
+        ? 'Consumer count exceeds the allowed limit'
+        : 'Consumer count is within the allowed limit',
+      consumerCount,
+      usersAllowed,
+      exceedsLimit
     });
   } catch (error) {
-    console.error('Error fetching consumer count:', error);
+    console.error('Error fetching consumer count or package:', error);
     res.status(500).json({
-      message: 'Error retrieving consumer count',
+      message: 'Error retrieving data',
       error: error.message
     });
   }
