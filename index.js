@@ -682,15 +682,15 @@ app.get('/api/consumers/count/:admin_id', async (req, res) => {
     const consumerCount = parseInt(consumerResult.rows[0].consumer_count, 10); // Convert to integer
     // Step 2: Get the users_allowed from the packages table
     const packageResult = await pool.query(
-      'SELECT users_allowed FROM packages WHERE id = $1',
-      ['2']
+      'SELECT allowed_users FROM package_purchases WHERE admin_id = $1',
+      [admin_id]
     );
     if (packageResult.rowCount === 0) {
       return res.status(404).json({
         message: 'No package found for the admin'
       });
     }
-    const usersAllowed = parseInt(packageResult.rows[0].users_allowed, 10); // Convert to integer
+    const usersAllowed = parseInt(packageResult.rows[0].allowed_users, 10); // Convert to integer
     // Step 3: Compare consumer count with users_allowed
     const exceedsLimit = consumerCount >= usersAllowed;
     // Step 4: Respond with the comparison result
@@ -710,6 +710,45 @@ app.get('/api/consumers/count/:admin_id', async (req, res) => {
     });
   }
 });
+// app.get('/api/consumers/count/:admin_id', async (req, res) => {
+//   const { admin_id } = req.params; // Retrieve admin_id from request query or session (e.g., next-auth session)
+//   try {
+//     // Step 1: Get the consumer count from the consumers table
+//     const consumerResult = await pool.query(
+//       'SELECT COUNT(*) AS consumer_count FROM consumers WHERE admin_id = $1',
+//       [admin_id]
+//     );
+//     const consumerCount = parseInt(consumerResult.rows[0].consumer_count, 10); // Convert to integer
+//     // Step 2: Get the users_allowed from the packages table
+//     const packageResult = await pool.query(
+//       'SELECT users_allowed FROM packages WHERE id = $1',
+//       ['2']
+//     );
+//     if (packageResult.rowCount === 0) {
+//       return res.status(404).json({
+//         message: 'No package found for the admin'
+//       });
+//     }
+//     const usersAllowed = parseInt(packageResult.rows[0].users_allowed, 10); // Convert to integer
+//     // Step 3: Compare consumer count with users_allowed
+//     const exceedsLimit = consumerCount >= usersAllowed;
+//     // Step 4: Respond with the comparison result
+//     res.status(200).json({
+//       message: exceedsLimit
+//         ? 'Consumer count exceeds the allowed limit'
+//         : 'Consumer count is within the allowed limit',
+//       consumerCount,
+//       usersAllowed,
+//       exceedsLimit
+//     });
+//   } catch (error) {
+//     console.error('Error fetching consumer count or package:', error);
+//     res.status(500).json({
+//       message: 'Error retrieving data',
+//       error: error.message
+//     });
+//   }
+// });
 
 
 
@@ -717,21 +756,21 @@ app.get('/api/consumers/count/:admin_id', async (req, res) => {
 
 //purchase api
 app.post('/api/purchase', async (req, res) => {
-  const { user_id, package_id, package_name, price, allowed_users } = req.body;
+  const { admin_id, package_id, package_name, price, allowed_users } = req.body;
 
   // Check if all required fields are provided
-  if (!user_id || !package_id || !package_name || !price) {
+  if (!admin_id || !package_id || !package_name || !price) {
       return res.status(400).json({ error: 'All fields are required' });
   }
 
   try {
       // Insert the purchase into the database
       const query = `
-          INSERT INTO package_purchases (user_id, package_id, package_name, price, allowed_users)
+          INSERT INTO package_purchases (admin_id, package_id, package_name, price, allowed_users)
           VALUES ($1, $2, $3, $4,$5)
           RETURNING *;
       `;
-      const values = [user_id, package_id, package_name, price,allowed_users];
+      const values = [admin_id, package_id, package_name, price,allowed_users];
       const result = await pool.query(query, values); // Assuming db.query connects to your database
 
       // Return the created purchase
