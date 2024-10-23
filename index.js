@@ -891,6 +891,45 @@ app.get('/tasks/:consumer_id', async (req, res) => {
 
 
 
+//mobile
+app.get('/task/:id', async (req, res) => {
+  try {
+    const { id } = req.params; // Extract 'id' from the URL parameters
+    
+    if (!id) {
+      return res
+        .status(400) // Bad request, since id is required
+        .json({ message: "Bad request: Task ID not provided" });
+    }
+
+    // Query to fetch the task by the given ID
+    const query = `
+      SELECT 
+        *
+      FROM tasks
+      WHERE id = $1
+    `;
+    
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404) // Task not found
+        .json({ message: "Task not found" });
+    }
+
+    // Send the fetched task as a response
+    res.status(200).json(result.rows[0]);
+   
+    
+  } catch (error) {
+    console.error('Error fetching task:', error);
+    res.status(500).json({ message: 'Server error' }); // Internal server error
+  }
+});
+
+
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
