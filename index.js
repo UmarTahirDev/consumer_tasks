@@ -783,6 +783,36 @@ app.post('/api/purchase', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
+app.get('/api/purchase', async (req, res) => {
+  // Get admin_id from the Authorization header
+  const authHeader = req.headers.authorization;
+  const admin_id = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (!admin_id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    const result = await pool.query('SELECT * FROM package_purchases WHERE admin_id = $1', [admin_id]);
+    
+    // Check if the user has purchased a package
+    if (result.rows.length > 0) {
+      return res.status(200).json({ hasPurchased: true, purchases: result.rows });
+    } else {
+      return res.status(200).json({ hasPurchased: false });
+    }
+    
+  } catch (error) {
+    console.error('Error retrieving consumer data:', error);
+    res.status(500).json({ message: 'Error retrieving consumer data.', error });
+  }
+});
+
+
+
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
