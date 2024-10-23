@@ -813,6 +813,84 @@ app.get('/api/purchase', async (req, res) => {
 
 
 
+
+
+
+//consumer task api
+// app.get('/tasks', async (req, res) => {
+//   try {
+//     console.log(req.headers);
+    
+//     const consumer_id = req.headers.authorization?.split(" ")[1];
+//     if (!consumer_id) {
+//       return res
+//         .status(401)
+//         .json({ message: "Unauthorized: consumer ID not found" });
+//     }
+//     // Query to fetch tasks only for the specific consumer
+//     const query = `
+//       SELECT 
+//        *
+//       FROM tasks
+//       WHERE tasks.consumer_id = $1
+//     `
+//     const result = await pool.query(query, [consumer_id])
+
+//     // Format the response
+//     const formattedTasks = result.rows.map(task => ({
+//       ...task,
+//       categories: task.categories.split(',').map(cat => cat.trim()) // Assuming categories are stored as comma-separated string
+//     }))
+
+//     res.status(200).json(formattedTasks)
+//   } catch (error) {
+//     console.error('Error fetching tasks:', error)
+//     if (error.name === 'JsonWebTokenError') {
+//       res.status(401).json({ message: 'Invalid token' })
+//     } else {
+//       res.status(500).json({ message: 'Error fetching tasks', error: error.message })
+//     }
+//   }
+// })
+app.get('/tasks/:consumer_id', async (req, res) => {
+  try {
+    const { consumer_id } = req.params; // Extract consumer_id from the URL parameters
+    
+    if (!consumer_id) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: consumer ID not provided" });
+    }
+
+    // Query to fetch tasks only for the specific consumer
+    const query = `
+      SELECT 
+       *
+      FROM tasks
+      WHERE tasks.consumer_id = $1
+    `;
+    
+    const result = await pool.query(query, [consumer_id]);
+
+    // Format the response
+    // const formattedTasks = result.rows.map(task => ({
+    //   ...task,
+    //   categories: task.categories.split(',').map(cat => cat.trim()) // Assuming categories are stored as comma-separated string
+    // }));
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    if (error.name === 'JsonWebTokenError') {
+      res.status(401).json({ message: 'Invalid token' });
+    } else {
+      res.status(500).json({ message: 'Error fetching tasks', error: error.message });
+    }
+  }
+});
+
+
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
