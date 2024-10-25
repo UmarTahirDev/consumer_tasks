@@ -530,6 +530,36 @@ app.put('/api/consumers/:id', async (req, res) => {
 
 
 //umer code
+// app.post("/api/tasks", async (req, res) => {
+//   const {
+//     task_name,
+//     consumerId,
+//     reminderType,
+//     reminderTime,
+//     reminderDays,
+//     admin_id,
+//   } = req.body;
+//   try {
+//     const reminderDetails = {
+//       reminderType,
+//       reminderTime,
+//       reminderDays: reminderType === "weekly" ? reminderDays : null, // Only set reminderDays if weekly
+//     };
+//     const query = `
+//       INSERT INTO tasks (task_name, consumer_id, reminder_details, admin_id)
+//       VALUES ($1, $2, $3, $4)
+//       RETURNING *
+//     `;
+//     const values = [task_name, consumerId, reminderDetails, admin_id];
+//     const result = await pool.query(query, values);
+//     res.status(201).json(result.rows[0]);
+//   } catch (error) {
+//     console.error("Error creating task:", error);
+//     res
+//       .status(500)
+//       .json({ message: "Error creating task.", error: error.message });
+//   }
+// });
 app.post("/api/tasks", async (req, res) => {
   const {
     task_name,
@@ -539,27 +569,48 @@ app.post("/api/tasks", async (req, res) => {
     reminderDays,
     admin_id,
   } = req.body;
+
   try {
     const reminderDetails = {
       reminderType,
       reminderTime,
       reminderDays: reminderType === "weekly" ? reminderDays : null, // Only set reminderDays if weekly
     };
+
+    // Step 1: Retrieve user_id from consumers table using consumerId
+    const userQuery = `
+      SELECT user_id FROM consumers WHERE id = $1
+    `;
+    const userResult = await pool.query(userQuery, [consumerId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: "Consumer not found." });
+    }
+
+    const userId = userResult.rows[0].user_id;
+console.log(userId);
+
+    // Step 2: Insert into tasks table with retrieved user_id
     const query = `
-      INSERT INTO tasks (task_name, consumer_id, reminder_details, admin_id)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO tasks (task_name, consumer_id, user_id, reminder_details, admin_id)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    const values = [task_name, consumerId, reminderDetails, admin_id];
+    const values = [task_name, consumerId, userId, reminderDetails, admin_id];
     const result = await pool.query(query, values);
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error("Error creating task:", error);
-    res
-      .status(500)
-      .json({ message: "Error creating task.", error: error.message });
+    res.status(500).json({ message: "Error creating task.", error: error.message });
   }
 });
+
+
+
+
+
+
 
 app.put("/api/tasks/:id", async (req, res) => {
   const { id } = req.params; // Get the task ID from the URL
@@ -636,7 +687,7 @@ app.get('/api/tasks/:id', async (req, res) => {
  
 
   try {
-    const result = await pool.query('SELECT * FROM tasks where id = $1', [req.params.id]);
+    const result = await pool.query('SELECT * FROM tasks where user_id = $1', [req.params.id]);
     res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error('Error retrieving consumer data:', error);
