@@ -346,6 +346,51 @@ app.put('/api/packages/:id', async (req, res) => {
 //     res.status(500).json({ message: 'Error saving consumer and user data.', error: error.message });
 //   }
 // });
+// app.post('/api/consumers', async (req, res) => {
+//   const { name, email, relationship, emergency_contact, password, preferenceForms, admin_id } = req.body;
+
+//   try {
+//     // Hash the password
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
+
+//     // Single query to insert into both consumers and users
+//     const query = `
+//       WITH inserted_consumer AS (
+//         INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences, admin_id)
+//         VALUES ($1, $2, $3, $4, $5, $6, $7)
+//         RETURNING *
+//       )
+//       INSERT INTO users (user_name, user_email, user_password, user_emergency_contact_information, user_role)
+//       SELECT name, email, $8, emergency_contact, 'consumer' FROM inserted_consumer
+//       RETURNING *;
+//     `;
+ 
+//       // Execute the query
+//       const result = await pool.query(query, [
+//         name,
+//         email,
+//         relationship,
+//         emergency_contact,
+//         hashedPassword, // Use hashed password for consumers table
+//         JSON.stringify(preferenceForms), // preferences field
+//         admin_id, // admin_id field
+//         hashedPassword, // Use hashed password for users table
+//       ]);
+      
+//       const newUser = result.rows[0]; // This contains both consumer and user data
+      
+//       res.status(201).json({
+//         message: 'Consumer and user data saved successfully!',
+//         user: newUser
+//       });
+//       // console.log(user_id,"12qwqwqw");
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: 'Error saving consumer and user data.', error: error.message });
+//     }
+// });
+
 app.post('/api/consumers', async (req, res) => {
   const { name, email, relationship, emergency_contact, password, preferenceForms, admin_id } = req.body;
 
@@ -354,32 +399,36 @@ app.post('/api/consumers', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Single query to insert into both consumers and users
+    // SQL query to insert into both consumers and users
     const query = `
-      WITH inserted_consumer AS (
-        INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences, admin_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
+      WITH inserted_user AS (
+        INSERT INTO users (user_name, user_email, user_password, user_emergency_contact_information, user_role)
+        VALUES ($1, $2, $3, $4, 'consumer')
+        RETURNING id
       )
-      INSERT INTO users (user_name, user_email, user_password, user_emergency_contact_information, user_role)
-      SELECT name, email, $8, emergency_contact, 'consumer' FROM inserted_consumer
+      INSERT INTO consumers (name, email, relationship, emergency_contact, password, preferences, admin_id, user_id)
+      VALUES ($5, $6, $7, $8, $9, $10, $11, (SELECT id FROM inserted_user))
       RETURNING *;
     `;
-
-    // Execute the query
+    
+    // Execute the query with correct parameter alignment
     const result = await pool.query(query, [
-      name,
-      email,
-      relationship,
-      emergency_contact,
-      hashedPassword, // Use hashed password for consumers table
-      JSON.stringify(preferenceForms), // preferences field
-      admin_id, // admin_id field
-      hashedPassword, // Use hashed password for users table
+      name,                        // $1 -> users table: user_name
+      email,                       // $2 -> users table: user_email
+      hashedPassword,              // $3 -> users table: user_password
+      emergency_contact,           // $4 -> users table: user_emergency_contact_information
+
+      name,                        // $5 -> consumers table: name
+      email,                       // $6 -> consumers table: email
+      relationship,                // $7 -> consumers table: relationship
+      emergency_contact,           // $8 -> consumers table: emergency_contact
+      hashedPassword,              // $9 -> consumers table: password
+      JSON.stringify(preferenceForms), // $10 -> consumers table: preferences
+      admin_id                     // $11 -> consumers table: admin_id
     ]);
 
-    const newUser = result.rows[0]; // This contains both consumer and user data
-
+    const newUser = result.rows[0]; // Contains the newly created consumer data
+    
     res.status(201).json({
       message: 'Consumer and user data saved successfully!',
       user: newUser
@@ -389,7 +438,6 @@ app.post('/api/consumers', async (req, res) => {
     res.status(500).json({ message: 'Error saving consumer and user data.', error: error.message });
   }
 });
-
 
 
 app.get('/api/consumers', async (req, res) => {
