@@ -682,18 +682,37 @@ app.get("/api/tasks", async (req, res) => {
 });
 
 
-app.get('/api/tasks/:id', async (req, res) => {
-  // Get admin_id from the Authorization header
+// app.get('/api/tasks/:id', async (req, res) => {
+//   // Get admin_id from the Authorization header
  
 
+//   try {
+//     const result = await pool.query('SELECT * FROM tasks where user_id = $1', [req.params.id]);
+//     res.status(200).json(result.rows[0]);
+//   } catch (error) {
+//     console.error('Error retrieving consumer data:', error);
+//     res.status(500).json({ message: 'Error retrieving consumer data.', error });
+//   }
+// });
+app.get('/api/tasks/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tasks where user_id = $1', [req.params.id]);
-    res.status(200).json(result.rows[0]);
+    const result = await pool.query('SELECT * FROM tasks WHERE user_id = $1', [req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No tasks found for this user.' });
+    }
+    
+    res.status(200).json(result.rows); // Return all tasks associated with the user
   } catch (error) {
-    console.error('Error retrieving consumer data:', error);
-    res.status(500).json({ message: 'Error retrieving consumer data.', error });
+    console.error('Error retrieving task data:', error);
+    res.status(500).json({ message: 'Error retrieving task data.', error: error.message });
   }
 });
+
+
+
+
+
 
 app.delete("/api/tasks/:id", async (req, res) => {
   const { id } = req.params; // Get the task ID from the URL
