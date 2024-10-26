@@ -1048,6 +1048,86 @@ app.get('/task/:id', async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// POST API for form submission
+app.post('/api/submit-form', async (req, res) => {
+  const {
+      fullName,
+      email,
+      phone,
+      role,
+      otherRole,
+      ageGroup,
+      numCareFor,
+      primaryCareNeeds,
+      support,
+      hearAbout,
+      otherHearAbout,
+      receiveUpdates,
+      termsAccepted,
+  } = req.body;
+
+  // Check if required fields are provided
+  if (!fullName || !email) {
+      return res.status(400).json({ error: 'Full name and email are required' });
+  }
+
+  try {
+      // Insert the submission into the database
+      const query = `
+          INSERT INTO user_submissions (full_name, email, phone, role, other_role, age_group, num_care_for, primary_care_needs, support, hear_about, other_hear_about, receive_updates, terms_accepted)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          RETURNING *;
+      `;
+      const values = [
+          fullName,
+          email,
+          phone,
+          role,
+          otherRole,
+          ageGroup,
+          numCareFor,
+          primaryCareNeeds,
+          support,
+          hearAbout,
+          otherHearAbout,
+          receiveUpdates,
+          termsAccepted,
+      ];
+      const result = await pool.query(query, values);
+
+      // Return the created submission
+      res.status(201).json({
+          success: true,
+          submission: result.rows[0], // returning the created submission record
+      });
+  } catch (error) {
+      console.error('Error submitting form:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
