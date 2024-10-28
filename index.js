@@ -1128,6 +1128,18 @@ app.post('/api/submit-form', async (req, res) => {
 });
 
 
+
+
+app.get('/api/submissions', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM user_submissions');  
+    res.json(result.rows);
+  } catch (error) {
+    errorHandler(error, res);
+  }
+});
+
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
