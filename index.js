@@ -1140,6 +1140,88 @@ app.get('/api/submissions', async (req, res) => {
 });
 
 
+
+
+
+
+
+
+
+
+//api for superadmin dashboard data
+
+// GET API to retrieve admin count from users table
+app.get('/api/admin-count', async (req, res) => {
+  try {
+    // Query to count users with role = 'admin'
+    const { rows } = await pool.query(
+      `SELECT COUNT(id) AS adminCount FROM users WHERE user_role = $1`,
+      ['admin']
+    );
+  
+    // Extract the count from the result
+    const adminCount = rows[0].admincount;
+  
+    // Send the admin count as a response
+    res.status(200).json({ success: true, adminCount });
+  } catch (error) {
+    console.error('Error fetching admin count:', error);
+    res.status(500).json({ error: 'Failed to fetch admin count' });
+  }
+  
+});
+
+
+
+
+
+// Assuming `pool` is already configured with your PostgreSQL connection
+app.get('/api/total-purchase-price', async (req, res) => {
+  try {
+    // SQL query to get the sum of the price column
+    const { rows } = await pool.query(
+      `SELECT SUM(price) AS totalPrice FROM package_purchases`
+    );
+
+    // Extract the total price from the result
+    const totalPrice = rows[0].totalprice;
+
+    // Send the total price as a response
+    res.status(200).json({ success: true, totalPrice });
+  } catch (error) {
+    console.error('Error fetching total purchase price:', error);
+    res.status(500).json({ error: 'Failed to fetch total purchase price' });
+  }
+});
+
+
+
+// Endpoint to fetch users with the role 'admin'
+// Endpoint to fetch admin users and their package purchases
+// Endpoint to fetch admin users and their package purchases
+app.get('/api/admin-users-purchases', async (req, res) => {
+  try {
+    // Query to select admin users and their package purchase data
+    const query = `
+      SELECT u.id, u.created_at AS date, u.user_name AS name, pp.price
+      FROM users u
+      INNER JOIN package_purchases pp ON u.id = pp.admin_id
+      WHERE u.user_role = $1;
+    `;
+    const values = ['admin'];
+    const { rows } = await pool.query(query, values);
+
+    res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Error fetching admin users and purchases:', error);
+    res.status(500).json({ error: 'Failed to fetch admin users and purchases' });
+  }
+});
+
+
+
+//end for superadmin dashboard data
+
 // Start the server
 const PORT = 8000;
 app.listen(PORT, () => {
