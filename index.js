@@ -563,6 +563,7 @@ app.put('/api/consumers/:id', async (req, res) => {
 app.post("/api/tasks", async (req, res) => {
   const {
     task_name,
+    task_img,
     consumerId,
     reminderType,
     reminderTime,
@@ -592,11 +593,11 @@ console.log(userId);
 
     // Step 2: Insert into tasks table with retrieved user_id
     const query = `
-      INSERT INTO tasks (task_name, consumer_id, user_id, reminder_details, admin_id)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO tasks (task_name, consumer_id, user_id, reminder_details, admin_id,task_img)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
-    const values = [task_name, consumerId, userId, reminderDetails, admin_id];
+    const values = [task_name, consumerId, userId, reminderDetails, admin_id,task_img];
     const result = await pool.query(query, values);
 
     res.status(201).json(result.rows[0]);
