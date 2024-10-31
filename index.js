@@ -681,7 +681,7 @@ app.get("/api/tasks", async (req, res) => {
 // });
 app.get('/api/tasks/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tasks WHERE user_id = $1', [req.params.id]);
+    const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'No tasks found for this user.' });
