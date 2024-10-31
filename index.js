@@ -596,7 +596,6 @@ console.log(userId);
 
 
 
-
 app.put("/api/tasks/:id", async (req, res) => {
   const { id } = req.params; // Get the task ID from the URL
   const {
@@ -606,6 +605,7 @@ app.put("/api/tasks/:id", async (req, res) => {
     reminderTime,
     reminderDays,
     admin_id,
+    task_img, // Add this line to receive the image URL
   } = req.body;
 
   try {
@@ -620,11 +620,12 @@ app.put("/api/tasks/:id", async (req, res) => {
       SET task_name = $1,
           consumer_id = $2,
           reminder_details = $3,
-          admin_id = $4
-      WHERE id = $5
+          admin_id = $4,
+          task_img = $5 -- Add this line to update the image URL
+      WHERE id = $6
       RETURNING *
     `;
-    const values = [task_name, consumerId, reminderDetails, admin_id, id];
+    const values = [task_name, consumerId, reminderDetails, admin_id, task_img, id]; // Add task_img to the values array
     const result = await pool.query(query, values);
 
     if (result.rowCount === 0) {
