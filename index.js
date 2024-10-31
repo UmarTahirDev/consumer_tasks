@@ -680,9 +680,28 @@ app.get("/api/tasks", async (req, res) => {
 //     res.status(500).json({ message: 'Error retrieving consumer data.', error });
 //   }
 // });
+//get task for update 
 app.get('/api/tasks/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [req.params.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No tasks found for this user.' });
+    }
+    
+    res.status(200).json(result.rows); // Return all tasks associated with the user
+  } catch (error) {
+    console.error('Error retrieving task data:', error);
+    res.status(500).json({ message: 'Error retrieving task data.', error: error.message });
+  }
+});
+
+
+//get task for specific user
+
+app.get('/api/tasksuser/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM tasks WHERE user_id = $1', [req.params.id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'No tasks found for this user.' });
