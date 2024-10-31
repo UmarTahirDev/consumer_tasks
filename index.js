@@ -477,34 +477,49 @@ app.put('/api/consumers/:id', async (req, res) => {
   const { id } = req.params;
   const { name, username, relationship, emergency_contact, password, preferenceForms, role, ageGroup } = req.body;
   console.log('Incoming update data:', req.body); // For debugging
-
-  // Validate the request body
-  // if (!name || !username || !emergency_contact || !password || !preferenceForms || !role || !ageGroup) {
-  //   return res.status(400).json({ message: 'All fields are required.' });
-  // }
+console.log(id);
 
   try {
-    const result = await pool.query(
+    await pool.query('BEGIN'); // Start transaction
+
+    // Update the consumers table
+    const consumerResult = await pool.query(
       `UPDATE consumers
        SET name = $1, username = $2, relationship = $3, emergency_contact = $4, password = $5, preferences = $6, role = $7, age_group = $8
-       WHERE id = $9 RETURNING *`,
+       WHERE id = $9 RETURNING *, user_id`,
       [name, username, relationship, emergency_contact, password, JSON.stringify(preferenceForms), role, ageGroup, id]
     );
-
-    if (result.rowCount === 0) {
+    
+    if (consumerResult.rowCount === 0) {
+      await pool.query('ROLLBACK'); // Rollback if consumer not found
       return res.status(404).json({ message: 'Consumer not found.' });
     }
+    
+    const updatedConsumer = consumerResult.rows[0];
+    const { user_id } = updatedConsumer; // Assuming user_id is the link to the users table
+    
+    // Update the users table (assuming fields like username and role are also in users)
+    await pool.query(
+      `UPDATE users
+      SET user_name = $1, user_role = $2,user_password = $3
+      WHERE id = $4`,
+      [username, 'consumer',password, user_id]
+    );
+    
+    console.log(user_id,"user_id");
+    await pool.query('COMMIT'); // Commit transaction if everything is successful
 
-    const updatedConsumer = result.rows[0];
     res.status(200).json({
-      message: 'Consumer updated successfully!',
+      message: 'Consumer and user updated successfully!',
       consumer: updatedConsumer,
     });
   } catch (error) {
-    console.error('Error updating consumer:', error);
-    res.status(500).json({ message: 'Error updating consumer.', error: error.message });
+    await pool.query('ROLLBACK'); // Rollback transaction on error
+    console.error('Error updating consumer and user:', error);
+    res.status(500).json({ message: 'Error updating consumer and user.', error: error.message });
   }
 });
+
 
 
 
